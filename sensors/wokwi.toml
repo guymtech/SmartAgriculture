@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = "build/sensors.ino.bin"
+elf = "build/sensors.ino.elf"
