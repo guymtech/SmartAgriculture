@@ -48,6 +48,12 @@ float getDistance() {
   return duration * 0.034 / 2;
 }
 
+int servoPos = 0;       // Current position
+int servoStep = 5;      // How many degrees to move per update
+unsigned long lastServoMove = 0; 
+int servoInterval = 50; // Speed of movement (lower is faster)
+bool isIrrigating = false; // Track server command
+
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
     // 1. Read Sensors (Directly into variables)
@@ -67,7 +73,7 @@ void loop() {
     String bundle = "@" + String(t, 1) + ";" + String(h, 1) + ";" + String(d, 1) + ";" + String(p);
     
     // Ensure Port 5500 matches your Flask run.py
-    String fullUrl = "https://192.168.29.253:5500/" + bundle;
+    String fullUrl = "https://10.57.127.12:5500/" + bundle;
 
     WiFiClientSecure *client = new WiFiClientSecure;
     client->setInsecure(); // Needed for 'adhoc' SSL
@@ -87,8 +93,7 @@ void loop() {
         char buzzCmd  = response.charAt(2);
 
         // Actuate Servo
-        if (servoCmd == '1') irrigationServo.write(90); 
-        else irrigationServo.write(0);
+        isIrrigating = (servoCmd == '1');
 
         // Actuate Buzzer
         if (buzzCmd == '1') digitalWrite(BUZZER_PIN, HIGH);
@@ -98,10 +103,32 @@ void loop() {
       Serial.print("HTTP Error: ");
       Serial.println(httpCode);
     }
+    if (isIrrigating) {
+    if (millis() - lastServoMove >= servoInterval) {
+      lastServoMove = millis();
+      
+      servoPos += servoStep;
+
+      // Sweep logic: if it hits 180 or 0, reverse direction
+      if (servoPos >= 180 || servoPos <= 0) {
+        servoStep = -servoStep; 
+      }
+      
+      irrigationServo.write(servoPos);
+      Serial.print("Servo Swiping: "); Serial.println(servoPos);
+    }
+  } else {
+    // If irrigation is OFF, return to 0 slowly or snap to 0
+    if (servoPos != 0) {
+      servoPos = 0;
+      irrigationServo.write(servoPos);
+      Serial.println(">> Irrigation: OFF (Resetting to 0)");
+    }
+  }
     
     http.end();
     delete client;
   }
   
-  delay(5000); // 2-second interval is best for DHT stability
+  delay(20000); // 4-second interval is best for DHT stability
 }

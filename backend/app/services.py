@@ -11,7 +11,7 @@ class IrrigationService:
         # Thresholds
         TEMP_THRESHOLD = 30.0
         HUM_THRESHOLD = 20.0
-        DIST_THRESHOLD = 50.0
+        DIST_THRESHOLD = 300.0
 
         irrigation_on = False
         alert_on = False
