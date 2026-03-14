@@ -1,6 +1,8 @@
 from flask import Blueprint, request
 from .services import IrrigationService
 from .database import FirebaseDatabase
+from flask import jsonify
+from flask import render_template
 
 main_bp = Blueprint('main', __name__)
 
@@ -31,3 +33,28 @@ def handle_iot_data(bundle):
     except Exception as e:
         print(f"❌ Route Error: {e}")
         return "0|0", 400
+
+@main_bp.route("/api/sensor-data")
+def get_sensor_data():
+    data = FirebaseDatabase.get_sensor_logs()
+
+    if not data:
+        return jsonify([])
+
+    result = []
+
+    for value in data:
+        result.append({
+            "temperature": value.get("temperature"),
+            "humidity": value.get("humidity"),
+            "distance": value.get("distance"),
+            "potentiometer": value.get("potentiometer"),
+            "command": value.get("irrigation_command"),
+            "timestamp": value.get("timestamp")
+        })
+
+    return jsonify(result)
+
+@main_bp.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")

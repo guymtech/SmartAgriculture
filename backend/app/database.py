@@ -39,3 +39,26 @@ class FirebaseDatabase:
         except Exception as e:
             print(f"❌ Firebase Error: {e}")
             return None
+        
+    @staticmethod
+    def get_sensor_logs(limit=50):
+        """Fetch latest sensor logs without requiring Firebase indexes"""
+        try:
+            ref = db.reference("sensor_logs")
+            data = ref.get()
+
+            if not data:
+                return []
+
+            # convert dict -> list
+            logs = list(data.values())
+
+            # sort locally instead of Firebase query
+            logs.sort(key=lambda x: x.get("timestamp", 0))
+
+            # return last N entries
+            return logs[-limit:]
+
+        except Exception as e:
+            print(f"❌ Fetch Error: {e}")
+            return []
